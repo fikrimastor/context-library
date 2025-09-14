@@ -579,6 +579,17 @@
               Refresh
               <span id="refresh-timer" class="text-xs text-gray-500 ml-1"></span>
             </button>
+            <button
+              id="restore-button"
+              type="button"
+              class="inline-flex items-center rounded border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 shadow-sm hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+              title="Restore missing memories to Vectorize index"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Restore Index
+            </button>
           </div>
         </div>
         <div class="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
@@ -690,6 +701,7 @@
         const memoriesList = document.getElementById("memories-list");
         const refreshTimerSpan = document.getElementById("refresh-timer");
         const refreshButton = document.getElementById("refresh-button");
+        const restoreButton = document.getElementById("restore-button");
         const userUuid = localStorage.getItem("mcpUserUuid");
         const refreshIntervalSeconds = 30;
         let countdown = refreshIntervalSeconds;
@@ -1014,6 +1026,73 @@
             fetchAndDisplayMemories(); // Fetch immediately
             resetAutoRefresh(); // Reset the interval and timer
           });
+
+          // Restore button functionality
+          if (restoreButton) {
+            restoreButton.addEventListener("click", () => {
+              if (!confirm("This will restore missing memories from the database to the Vectorize index. Continue?")) {
+                return;
+              }
+
+              console.log("Memory restoration triggered.");
+              const originalText = restoreButton.innerHTML;
+              restoreButton.disabled = true;
+              restoreButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Restoring...
+              `;
+
+              fetch(`/${userUuid}/memories/restore`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+              })
+              .then((response) => {
+                if (!response.ok) {
+                  return response.json().then(err => {
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                  }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                  });
+                }
+                return response.json();
+              })
+              .then((data) => {
+                if (data.success) {
+                  console.log("Memory restoration completed:", data);
+                  
+                  let message = `Restoration completed! Restored ${data.restored} memories to Vectorize index.`;
+                  if (data.errors && data.errors.length > 0) {
+                    message += `
+
+Errors encountered: ${data.errors.length}
+`;
+                    data.errors.forEach(error => {
+                      message += `- Memory ${error.memoryId}: ${error.error}
+`;
+                    });
+                  }
+                  
+                  alert(message);
+                  
+                  // Refresh memories list after restoration
+                  fetchAndDisplayMemories();
+                  resetAutoRefresh();
+                } else {
+                  throw new Error(data.error || "Restoration failed on the server.");
+                }
+              })
+              .catch((error) => {
+                console.error("Error during memory restoration:", error);
+                alert(`Failed to restore memories: ${error.message}`);
+              })
+              .finally(() => {
+                restoreButton.disabled = false;
+                restoreButton.innerHTML = originalText;
+              });
+            });
+          }
 
           // Event delegation for memory list actions
           memoriesList.addEventListener("click", function (event) {

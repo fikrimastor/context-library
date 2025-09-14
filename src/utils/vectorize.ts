@@ -99,6 +99,62 @@ export async function searchMemories(
   return memories;
 }
 
+// Check if memory exists in Vectorize index
+export async function checkMemoryExistsInVectorize(memoryId: string, userId: string, env: Env): Promise<boolean> {
+  try {
+    const results = await env.VECTORIZE.query([0], {
+      namespace: userId,
+      topK: 1,
+      filter: { id: memoryId },
+      returnMetadata: false,
+    });
+    
+    return results.matches && results.matches.some(match => match.id === memoryId);
+  } catch (error) {
+    console.error(`Error checking if memory ${memoryId} exists in Vectorize:`, error);
+    return false;
+  }
+}
+
+// Restore missing memories from D1 to Vectorize
+export async function restoreMissingMemoriesToVectorize(userId: string, env: Env): Promise<{
+  restored: number;
+  errors: Array<{ memoryId: string; error: string }>;
+}> {
+  const errors: Array<{ memoryId: string; error: string }> = [];
+  let restored = 0;
+  
+  try {
+    // Get all memories from D1 for this user
+    const { getAllMemoriesFromD1 } = await import('./db');
+    const memories = await getAllMemoriesFromD1(userId, env);
+    
+    for (const memory of memories) {
+      try {
+        // Check if memory exists in Vectorize
+        const existsInVectorize = await checkMemoryExistsInVectorize(memory.id, userId, env);
+        
+        if (!existsInVectorize) {
+          // Memory missing from Vectorize, restore it
+          await storeMemory(memory.content, userId, env);
+          restored++;
+          console.log(`Restored memory ${memory.id} to Vectorize for user ${userId}`);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        errors.push({ memoryId: memory.id, error: errorMessage });
+        console.error(`Failed to restore memory ${memory.id} for user ${userId}:`, error);
+      }
+    }
+    
+    return { restored, errors };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    errors.push({ memoryId: 'unknown', error: `Failed to get memories from D1: ${errorMessage}` });
+    return { restored, errors };
+  }
+}
+
 /**
  * Updates a memory vector embedding
  * @param memoryId - ID of the memory to update
