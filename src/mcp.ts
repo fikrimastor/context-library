@@ -24,7 +24,6 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
       1. User explicitly asks to remember something ("remember this...")
       2. You detect significant user preferences, traits, or patterns worth preserving
       3. Technical details, examples, or emotional responses emerge that would be valuable in future interactions
-      4. documen
 
       Consider using this tool after each user message to build comprehensive context over time. The stored information
       will be available in future sessions to provide personalized responses. THIS TOOL MUST BE INVOKED THROUGH

@@ -6,7 +6,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "context-library",
   "main": "src/index.ts",
-  "account_id": "cc7bbe3c383f956d5dfba2e1f98bf5c4",
   "compatibility_date": "2025-03-10",
   "compatibility_flags": ["nodejs_compat"],
   "migrations": [
@@ -38,7 +37,7 @@
     {
       "binding": "DB",
       "database_name": "context-library",
-      "database_id": "73edbff5-6467-484d-bdaf-09dceb1fb0c1"
+      "database_id": "a25fc989-398c-40de-9aae-569d662f0455"
     }
   ],
   "durable_objects": {
