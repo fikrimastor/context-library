@@ -4,7 +4,7 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "mcp-memory",
+  "name": "context-library",
   "main": "src/index.ts",
   "account_id": "cc7bbe3c383f956d5dfba2e1f98bf5c4",
   "compatibility_date": "2025-03-10",
@@ -37,7 +37,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "mcp-context",
+      "database_name": "context-library",
       "database_id": "73edbff5-6467-484d-bdaf-09dceb1fb0c1"
     }
   ],
@@ -62,7 +62,7 @@
   "vectorize": [
     {
       "binding": "VECTORIZE",
-      "index_name": "mcp-context-kv"
+      "index_name": "mcp-context-library-kv"
     }
   ]
 }
