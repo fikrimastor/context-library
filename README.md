@@ -24,7 +24,7 @@
 
 ### Option 1: One-Click Deploy Your Own MCP Memory to Cloudflare
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/puliczek/mcp-memory)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fikrimastor/context-library)
 
 In **Create Vectorize** section choose:
 - **Dimensions:** 1024
