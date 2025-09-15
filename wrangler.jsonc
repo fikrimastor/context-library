@@ -58,5 +58,8 @@
       "binding": "VECTORIZE",
       "index_name": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     }
-  ]
+  ],
+  "vars": {
+    "MCP_NAME": "MCP Context Library"
+  }
 }

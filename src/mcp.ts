@@ -10,13 +10,15 @@ type MyMCPProps = {
 };
 
 export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
-  server = new McpServer({
-    name: "MCP Context Library",
-    version,
-  });
+  server!: McpServer;
 
   async init() {
     const env = this.env as Env;
+
+    this.server = new McpServer({
+      name: env.MCP_NAME || "MCP Context Library",
+      version,
+    });
 
     this.server.tool(
         "add_to_memory",
