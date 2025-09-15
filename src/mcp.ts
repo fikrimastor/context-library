@@ -11,7 +11,7 @@ type MyMCPProps = {
 
 export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
   server = new McpServer({
-    name: "MCP Memory",
+    name: "MCP Context Library",
     version,
   });
 
