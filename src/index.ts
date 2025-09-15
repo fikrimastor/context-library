@@ -28,6 +28,14 @@ app.use("*", async (c, next) => {
 // index.html
 app.get("/", async (c) => await c.env.ASSETS.fetch(c.req.raw));
 
+// memories.html
+app.get("/memories", async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = "/memories.html";
+  const modifiedRequest = new Request(url.toString(), c.req.raw);
+  return await c.env.ASSETS.fetch(modifiedRequest);
+});
+
 // Get all memories for a user
 app.get("/:userId/memories", async (c) => {
   const userId = c.req.param("userId");

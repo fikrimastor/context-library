@@ -139,21 +139,86 @@ export async function restoreMissingMemoriesToVectorize(userId: string, env: Env
     const { getAllMemoriesFromD1 } = await import('./db');
     const memories = await getAllMemoriesFromD1(userId, env);
     
-    for (const memory of memories) {
+    if (memories.length === 0) {
+      return { restored, errors };
+    }
+
+    // Process memories in small chunks to avoid subrequest limits
+    // Each memory = 1 AI call + batch check + batch upsert per chunk
+    const CHUNK_SIZE = 10; // Reduced to 10 to stay well under subrequest limits
+    const chunks = [];
+    
+    for (let i = 0; i < memories.length; i += CHUNK_SIZE) {
+      chunks.push(memories.slice(i, i + CHUNK_SIZE));
+    }
+
+    console.log(`Processing ${memories.length} memories in ${chunks.length} chunks for user ${userId}`);
+
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      const chunk = chunks[chunkIndex];
+      console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length} (${chunk.length} memories)`);
+
       try {
-        // Check if memory exists in Vectorize
-        const existsInVectorize = await checkMemoryExistsInVectorize(memory.id, userId, env);
+        // Batch check which memories exist in Vectorize
+        const memoryIds = chunk.map(m => m.id);
+        const existingVectors = await env.VECTORIZE.getByIds(memoryIds);
+        const existingIds = new Set(existingVectors.map(v => v.id));
         
-        if (!existsInVectorize) {
-          // Memory missing from Vectorize, restore it
-          await storeMemory(memory.content, userId, env);
-          restored++;
-          console.log(`Restored memory ${memory.id} to Vectorize for user ${userId}`);
+        // Filter to only missing memories
+        const missingMemories = chunk.filter(memory => !existingIds.has(memory.id));
+        
+        if (missingMemories.length === 0) {
+          console.log(`Chunk ${chunkIndex + 1}: All memories already exist in Vectorize`);
+          continue;
         }
+
+        console.log(`Chunk ${chunkIndex + 1}: Found ${missingMemories.length} missing memories to restore`);
+
+        // Generate embeddings with rate limiting to avoid subrequest limits
+        const vectorsToUpsert = [];
+        
+        for (let i = 0; i < missingMemories.length; i++) {
+          const memory = missingMemories[i];
+          try {
+            // Add small delay between AI calls to be nice to rate limits
+            if (i > 0) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            const values = await generateEmbeddings(memory.content, env);
+            vectorsToUpsert.push({
+              id: memory.id,
+              values,
+              namespace: userId,
+              metadata: { content: memory.content, type: "memory" },
+            });
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            errors.push({ memoryId: memory.id, error: `Failed to generate embedding: ${errorMessage}` });
+            console.error(`Failed to generate embedding for memory ${memory.id}:`, error);
+          }
+        }
+
+        // Batch upsert all vectors for this chunk
+        if (vectorsToUpsert.length > 0) {
+          await env.VECTORIZE.upsert(vectorsToUpsert);
+          restored += vectorsToUpsert.length;
+          console.log(`Chunk ${chunkIndex + 1}: Successfully restored ${vectorsToUpsert.length} memories`);
+        }
+
+        // Longer delay between chunks to respect rate limits
+        if (chunkIndex < chunks.length - 1) {
+          console.log(`Waiting before processing next chunk...`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        errors.push({ memoryId: memory.id, error: errorMessage });
-        console.error(`Failed to restore memory ${memory.id} for user ${userId}:`, error);
+        // Add error for all memories in this chunk
+        for (const memory of chunk) {
+          errors.push({ memoryId: memory.id, error: `Chunk processing failed: ${errorMessage}` });
+        }
+        console.error(`Failed to process chunk ${chunkIndex + 1}:`, error);
       }
     }
     
