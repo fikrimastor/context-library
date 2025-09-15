@@ -52,22 +52,32 @@ export async function storeMemory(text: string, userId: string, env: Env): Promi
  * @param query - The query to search for
  * @param userId - User ID to search within (used as namespace)
  * @param env - Environment containing Vectorize service
+ * @param metadataFilters - Optional metadata filters to apply
  * @returns Promise resolving to an array of memories matching the query
  */
 export async function searchMemories(
     query: string,
     userId: string,
-    env: Env
+    env: Env,
+    metadataFilters?: Record<string, string>
 ): Promise<Array<{ content: string; score: number; id: string }>> {
   // Generate embedding for query
   const queryVector = await generateEmbeddings(query, env);
 
-  // Search Vectorize
-  const results = await env.VECTORIZE.query(queryVector, {
+  // Prepare query options
+  const queryOptions: any = {
     namespace: userId,
     topK: 10,
     returnMetadata: "all",
-  });
+  };
+
+  // Add metadata filters if provided
+  if (metadataFilters) {
+    queryOptions.filter = metadataFilters;
+  }
+
+  // Search Vectorize
+  const results = await env.VECTORIZE.query(queryVector, queryOptions);
 
   if (!results.matches || results.matches.length === 0) {
     return [];

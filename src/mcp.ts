@@ -293,26 +293,33 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
           try {
             // Build search query combining all criteria
             let searchQuery = "";
-            const filters = [];
+            const metadataFilters: Record<string, string> = {};
 
-            if (documentType) filters.push(`DOCUMENT_TYPE: ${documentType}`);
-            if (projectName) filters.push(`PROJECT: ${projectName}`);
-            if (priority) filters.push(`PRIORITY: ${priority}`);
-            if (sectionType) filters.push(`SECTION_TYPE: ${sectionType}`);
+            if (documentType) metadataFilters.DOCUMENT_TYPE = documentType;
+            if (projectName) metadataFilters.PROJECT = projectName;
+            if (priority) metadataFilters.PRIORITY = priority;
+            if (sectionType) metadataFilters.SECTION_TYPE = sectionType;
+
+            // For tags, we'll still use the semantic search approach since tags are space-separated
+            // and Vectorize metadata filtering doesn't support "contains" operations
             if (tags && tags.length > 0) {
-              filters.push(`TAGS: ${tags.join(' ')}`);
+              searchQuery += ` TAGS: ${tags.join(' ')}`;
             }
 
-            searchQuery = filters.join(' ') + (keywords ? ` ${keywords}` : '');
-
-            if (!searchQuery.trim()) {
-              searchQuery = "DOCUMENT_TYPE:"; // Search for any document with document type
+            // Add keywords to search query
+            if (keywords) {
+              searchQuery += ` ${keywords}`;
             }
 
-            console.log(`Searching artifacts with query: "${searchQuery}"`);
+            // If no filters, search for any document with document type
+            if (Object.keys(metadataFilters).length === 0 && !searchQuery.trim()) {
+              searchQuery = "DOCUMENT_TYPE:";
+            }
 
-            // Use existing search function
-            const memories = await searchMemories(searchQuery, this.props.userId, env);
+            console.log(`Searching artifacts with query: "${searchQuery}" and filters:`, metadataFilters);
+
+            // Use existing search function with metadata filters
+            const memories = await searchMemories(searchQuery || "document", this.props.userId, env, metadataFilters);
 
             if (memories.length === 0) {
               return {
@@ -339,11 +346,7 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
                 }
               }
 
-              // Apply additional filtering
-              if (documentType && metadata.DOCUMENT_TYPE !== documentType) continue;
-              if (projectName && metadata.PROJECT !== projectName) continue;
-              if (priority && metadata.PRIORITY !== priority) continue;
-              if (sectionType && metadata.SECTION_TYPE !== sectionType) continue;
+              // Apply additional filtering for tags if specified
               if (tags && tags.length > 0) {
                 const artifactTags = (metadata.TAGS || '').split(',').map((t: string) => t.trim());
                 if (!tags.every(tag => artifactTags.includes(tag))) continue;
@@ -412,11 +415,16 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
         },
         async ({ projectName, documentType, masterIndexId }) => {
           try {
-            // Search for all sections of this document
-            const searchQuery = `PROJECT: ${projectName} DOCUMENT_TYPE: ${documentType}`;
-            console.log(`Reconstructing document with query: "${searchQuery}"`);
+            // Search for all sections of this document using metadata filters for exact matching
+            const searchQuery = `${projectName} ${documentType}`; // Simple query for embedding generation
+            const metadataFilters = {
+              PROJECT: projectName,
+              DOCUMENT_TYPE: documentType
+            };
+            
+            console.log(`Reconstructing document with query: "${searchQuery}" and filters:`, metadataFilters);
 
-            const memories = await searchMemories(searchQuery, this.props.userId, env);
+            const memories = await searchMemories(searchQuery, this.props.userId, env, metadataFilters);
 
             if (memories.length === 0) {
               return {
@@ -445,21 +453,18 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
                 }
               }
 
-              // Filter exact matches
-              if (metadata.PROJECT === projectName && metadata.DOCUMENT_TYPE === documentType) {
-                const content = lines.slice(contentStart).join('\n').trim();
+              const content = lines.slice(contentStart).join('\n').trim();
 
-                if (metadata.SECTION === 'Master Index') {
-                  masterIndex = { metadata, content, id: memory.id };
-                } else {
-                  sections.push({
-                    metadata,
-                    content,
-                    id: memory.id,
-                    sectionName: metadata.SECTION || 'Unknown Section',
-                    sectionType: metadata.SECTION_TYPE || 'section'
-                  });
-                }
+              if (metadata.SECTION === 'Master Index') {
+                masterIndex = { metadata, content, id: memory.id };
+              } else {
+                sections.push({
+                  metadata,
+                  content,
+                  id: memory.id,
+                  sectionName: metadata.SECTION || 'Unknown Section',
+                  sectionType: metadata.SECTION_TYPE || 'section'
+                });
               }
             }
 
@@ -509,18 +514,28 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
 
             // Add all sections
             for (const section of sections) {
-              reconstructedDoc += `## ${section.sectionName}\n\n${section.content}\n\n---\n\n`;
+              reconstructedDoc += `## ${section.sectionName}
+
+${section.content}
+
+---
+
+`;
             }
 
             // Add master index info if available
             if (masterIndex) {
-              reconstructedDoc += `\n**Master Index Information:**\n${masterIndex.content}`;
+              reconstructedDoc += `
+**Master Index Information:**
+${masterIndex.content}`;
             }
 
             return {
               content: [{
                 type: "text",
-                text: `Successfully reconstructed ${documentType} document:\n\n${reconstructedDoc}`
+                text: `Successfully reconstructed ${documentType} document:
+
+${reconstructedDoc}`
               }],
             };
           } catch (error) {
@@ -547,9 +562,10 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
           try {
             console.log(`Listing artifacts for project: "${projectName}"`);
 
-            // Search for all artifacts in this project
-            const searchQuery = `PROJECT: ${projectName}`;
-            const memories = await searchMemories(searchQuery, this.props.userId, env);
+            // Search for all artifacts in this project using metadata filter
+            const searchQuery = projectName;
+            const metadataFilters = { PROJECT: projectName };
+            const memories = await searchMemories(searchQuery, this.props.userId, env, metadataFilters);
 
             if (memories.length === 0) {
               return {
@@ -575,28 +591,26 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
                 }
               }
 
-              // Only include exact project matches
-              if (metadata.PROJECT === projectName) {
-                const docType = metadata.DOCUMENT_TYPE || 'Unknown';
-                const section = metadata.SECTION || 'Unknown Section';
-                const sectionType = metadata.SECTION_TYPE || 'section';
+              // Extract document information
+              const docType = metadata.DOCUMENT_TYPE || 'Unknown';
+              const section = metadata.SECTION || 'Unknown Section';
+              const sectionType = metadata.SECTION_TYPE || 'section';
 
-                if (!artifactMap.has(docType)) {
-                  artifactMap.set(docType, {
-                    type: docType,
-                    sections: [],
-                    masterIndex: null,
-                    metadata: metadata
-                  });
-                }
+              if (!artifactMap.has(docType)) {
+                artifactMap.set(docType, {
+                  type: docType,
+                  sections: [],
+                  masterIndex: null,
+                  metadata: metadata
+                });
+              }
 
-                const artifact = artifactMap.get(docType);
+              const artifact = artifactMap.get(docType);
 
-                if (section === 'Master Index') {
-                  artifact.masterIndex = { section, metadata, id: memory.id };
-                } else {
-                  artifact.sections.push({ section, sectionType, metadata, id: memory.id });
-                }
+              if (section === 'Master Index') {
+                artifact.masterIndex = { section, metadata, id: memory.id };
+              } else {
+                artifact.sections.push({ section, sectionType, metadata, id: memory.id });
               }
             }
 
@@ -607,27 +621,43 @@ ${storedSections.map(s => `- ${s.title} (${s.type}): ${s.memoryId}`).join('\n')}
             }
 
             // Build summary
-            let summary = `# Artifacts for Project: ${projectName}\n\n`;
-            summary += `Found ${artifactMap.size} document type(s) with ${memories.length} total sections:\n\n`;
+            let summary = `# Artifacts for Project: ${projectName}
+
+`;
+            summary += `Found ${artifactMap.size} document type(s) with ${memories.length} total sections:
+
+`;
 
             for (const [docType, artifact] of artifactMap.entries()) {
               const meta = artifact.metadata;
               const timestamp = meta.TIMESTAMP ? new Date(meta.TIMESTAMP).toLocaleDateString() : 'Unknown';
 
-              summary += `## ${docType}\n`;
-              summary += `- 🏷️ **Tags:** ${meta.TAGS || 'None'}\n`;
-              summary += `- ⚡ **Priority:** ${meta.PRIORITY || 'Medium'}\n`;
-              summary += `- 📅 **Date:** ${timestamp}\n`;
-              summary += `- 📊 **Sections:** ${artifact.sections.length}${artifact.masterIndex ? ' + Master Index' : ''}\n`;
+              summary += `## ${docType}
+`;
+              summary += `- 🏷️ **Tags:** ${meta.TAGS || 'None'}
+`;
+              summary += `- ⚡ **Priority:** ${meta.PRIORITY || 'Medium'}
+`;
+              summary += `- 📅 **Date:** ${timestamp}
+`;
+              summary += `- 📊 **Sections:** ${artifact.sections.length}${artifact.masterIndex ? ' + Master Index' : ''}
+`;
 
               if (artifact.sections.length > 0) {
-                summary += `- 📝 **Section List:**\n`;
+                summary += `- 📝 **Section List:**
+`;
                 artifact.sections.forEach((sec: any, idx: number) => {
-                  summary += `  ${idx + 1}. ${sec.section} (${sec.sectionType})\n`;
+                  summary += `  ${idx + 1}. ${sec.section} (${sec.sectionType})
+`;
                 });
               }
 
-              summary += `\n*Use reconstruct_artifact to view the complete ${docType} document.*\n\n---\n\n`;
+              summary += `
+*Use reconstruct_artifact to view the complete ${docType} document.*
+
+---
+
+`;
             }
 
             return {
