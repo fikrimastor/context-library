@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { MyMCP } from "./mcp";
 import { getAllMemoriesFromD1, initializeDatabase, deleteMemoryFromD1, updateMemoryInD1 } from "./utils/db";
-import { deleteVectorById, updateMemoryVector } from "./utils/vectorize";
+import { deleteVectorById, updateMemoryVector, restoreMissingMemoriesToVectorize } from "./utils/vectorize";
 
 const app = new Hono<{
   Bindings: Env;
@@ -27,6 +27,14 @@ app.use("*", async (c, next) => {
 
 // index.html
 app.get("/", async (c) => await c.env.ASSETS.fetch(c.req.raw));
+
+// memories.html
+app.get("/memories", async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = "/memories.html";
+  const modifiedRequest = new Request(url.toString(), c.req.raw);
+  return await c.env.ASSETS.fetch(modifiedRequest);
+});
 
 // Get all memories for a user
 app.get("/:userId/memories", async (c) => {
@@ -105,6 +113,33 @@ app.put("/:userId/memories/:memoryId", async (c) => {
       return c.json({ success: false, error: errorMessage }, 404);
     }
     return c.json({ success: false, error: errorMessage }, 500);
+  }
+});
+
+// Restore missing memories from D1 to Vectorize for a user
+app.post("/:userId/memories/restore", async (c) => {
+  const userId = c.req.param("userId");
+
+  try {
+    console.log(`Starting memory restoration for user ${userId}...`);
+    
+    const result = await restoreMissingMemoriesToVectorize(userId, c.env);
+    
+    console.log(`Memory restoration completed for user ${userId}. Restored: ${result.restored}, Errors: ${result.errors.length}`);
+    
+    return c.json({
+      success: true,
+      restored: result.restored,
+      errors: result.errors,
+      message: `Restored ${result.restored} missing memories to Vectorize index${result.errors.length > 0 ? ` with ${result.errors.length} errors` : ''}`
+    });
+  } catch (error) {
+    console.error(`Error during memory restoration for user ${userId}:`, error);
+    return c.json({
+      success: false,
+      error: "Failed to restore memories",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
   }
 });
 

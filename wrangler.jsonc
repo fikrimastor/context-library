@@ -4,15 +4,16 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "mcp-memory",
+  "name": "context-library",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
+  "account_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
   "compatibility_flags": ["nodejs_compat"],
   "migrations": [
     {
       "new_sqlite_classes": ["MyMCP"],
       "tag": "v1"
-    },
+    }
   ],
   "unsafe": {
     "bindings": [
@@ -30,8 +31,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "mcp-memory-db",
-      "database_id": "a25fc989-398c-40de-9aae-569d662f0455"
+      "database_name": "mcp-large-context",
+      "database_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     }
   ],
   "durable_objects": {
@@ -55,7 +56,10 @@
   "vectorize": [
     {
       "binding": "VECTORIZE",
-      "index_name": "mcp-memory-vectorize"
+      "index_name": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     }
-  ]
+  ],
+  "vars": {
+    "MCP_NAME": "MCP Context Library"
+  }
 }
