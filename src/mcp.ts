@@ -45,7 +45,7 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
             // Helper function to detect document type
             const detectDocumentType = (content: string): string => {
               const lower = content.toLowerCase();
-              if (lower.includes('product requirements') || lower.includes('user stories') || lower.includes('acceptance criteria')) {
+              if (lower.includes('PRD') || lower.includes('product requirements') || lower.includes('user stories') || lower.includes('acceptance criteria')) {
                 return 'prd';
               } else if (lower.includes('technical specification') || lower.includes('architecture') || lower.includes('api reference')) {
                 return 'technical_spec';
@@ -57,17 +57,17 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
               return 'memory';
             };
 
-              const type: string = detectDocumentType(thingToRemember);
+            const type: string = detectDocumentType(documentType || thingToRemember);
 
-              // Prepare metadata
-              const metadata: any = {
-                  title,
-                  projectName,
-                  tags: tags || []
-              };
+            // Prepare metadata
+            const metadata: any = {
+              title,
+              projectName,
+              tags: tags || []
+            };
 
             // Store in Vectorize using the refactored function
-            const memoryId = await storeMemory(thingToRemember, this.props.userId, env);
+            const memoryId = await storeMemory(thingToRemember, this.props.userId, env, metadata);
 
             // Also store content in D1 database
             await storeMemoryInD1(thingToRemember, this.props.userId, env, memoryId, type, JSON.stringify(metadata));

@@ -25,11 +25,16 @@ async function generateEmbeddings(text: string, env: Env): Promise<number[]> {
  * Truncates text to fit within Vectorize metadata size limits
  * @param text - Text to truncate
  * @param maxBytes - Maximum bytes allowed (default: 8192 to leave room for other metadata)
- * @returns Truncated text
+ * @returns Array of memory objects
  */
-function truncateForMetadata(text: string, maxBytes: number = 8192): string {
-  if (new TextEncoder().encode(text).length <= maxBytes) {
-    return text;
+function truncateForMetadata(text: string, maxBytes: number = 8192): { text: string; fullContentInD1: boolean } {
+  const fullContentInD1 = new TextEncoder().encode(text).length <= maxBytes;
+
+  if (fullContentInD1) {
+    return {
+      text,
+      fullContentInD1
+    };
   }
 
   // Truncate and add ellipsis
@@ -38,7 +43,10 @@ function truncateForMetadata(text: string, maxBytes: number = 8192): string {
     truncated = truncated.slice(0, -1);
   }
 
-  return truncated + "...";
+  return {
+    text: truncated + "...",
+    fullContentInD1
+  };
 }
 
 /**
@@ -46,9 +54,10 @@ function truncateForMetadata(text: string, maxBytes: number = 8192): string {
  * @param text - The memory content to store
  * @param userId - User ID to associate with the memory (used as namespace)
  * @param env - Environment containing Vectorize and AI services
+ * @param metadata - Additional metadata to store with the memory
  * @returns Promise resolving to the unique memory ID
  */
-export async function storeMemory(text: string, userId: string, env: Env): Promise<string> {
+export async function storeMemory(text: string, userId: string, env: Env, metadata: any): Promise<string> {
   const memoryId = uuidv4();
 
   // Generate embedding
@@ -57,19 +66,23 @@ export async function storeMemory(text: string, userId: string, env: Env): Promi
   // Truncate content for metadata to avoid size limits
   const truncatedContent = truncateForMetadata(text);
 
+  // merge additional metadata if provided
+  metadata = {
+    type: "memory",
+    ...(metadata && typeof metadata === 'object' ? metadata : {}),
+    content: truncatedContent.text,
+    fullContentInD1: truncatedContent.fullContentInD1
+  };
+
   await env.VECTORIZE.upsert([
     {
       id: memoryId,
       values,
       namespace: userId,
-      metadata: {
-        content: truncatedContent,
-        type: "memory",
-        fullContentInD1: true // Flag to indicate full content is in D1
-      },
+      metadata
     },
   ]);
-  console.log(`Memory stored in Vectorize with ID: ${memoryId}, content truncated from ${text.length} to ${truncatedContent.length} chars`);
+  console.log(`Memory stored in Vectorize with ID: ${memoryId}, content truncated from ${text.length} to ${truncatedContent.text.length} chars`);
 
   return memoryId;
 }
