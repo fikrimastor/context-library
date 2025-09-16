@@ -54,27 +54,22 @@ export async function storeMemory(text: string, userId: string, env: Env): Promi
   // Generate embedding
   const values = await generateEmbeddings(text, env);
 
-  // Store in Vectorize (with local development fallback)
-  if (env.VECTORIZE) {
-    // Truncate content for metadata to avoid size limits
-    const truncatedContent = truncateForMetadata(text);
+  // Truncate content for metadata to avoid size limits
+  const truncatedContent = truncateForMetadata(text);
 
-    await env.VECTORIZE.upsert([
-      {
-        id: memoryId,
-        values,
-        namespace: userId,
-        metadata: {
-          content: truncatedContent,
-          type: "memory",
-          fullContentInD1: true // Flag to indicate full content is in D1
-        },
+  await env.VECTORIZE.upsert([
+    {
+      id: memoryId,
+      values,
+      namespace: userId,
+      metadata: {
+        content: truncatedContent,
+        type: "memory",
+        fullContentInD1: true // Flag to indicate full content is in D1
       },
-    ]);
-    console.log(`Memory stored in Vectorize with ID: ${memoryId}, content truncated from ${text.length} to ${truncatedContent.length} chars`);
-  } else {
-    console.warn(`Vectorize not available (local development mode). Memory ID: ${memoryId} stored in D1 only.`);
-  }
+    },
+  ]);
+  console.log(`Memory stored in Vectorize with ID: ${memoryId}, content truncated from ${text.length} to ${truncatedContent.length} chars`);
 
   return memoryId;
 }
