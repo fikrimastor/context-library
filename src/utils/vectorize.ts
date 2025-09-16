@@ -22,6 +22,26 @@ async function generateEmbeddings(text: string, env: Env): Promise<number[]> {
 }
 
 /**
+ * Truncates text to fit within Vectorize metadata size limits
+ * @param text - Text to truncate
+ * @param maxBytes - Maximum bytes allowed (default: 8192 to leave room for other metadata)
+ * @returns Truncated text
+ */
+function truncateForMetadata(text: string, maxBytes: number = 8192): string {
+  if (new TextEncoder().encode(text).length <= maxBytes) {
+    return text;
+  }
+
+  // Truncate and add ellipsis
+  let truncated = text;
+  while (new TextEncoder().encode(truncated + "...").length > maxBytes) {
+    truncated = truncated.slice(0, -1);
+  }
+
+  return truncated + "...";
+}
+
+/**
  * Stores a memory in Vectorize with its vector embedding and returns the generated ID
  * @param text - The memory content to store
  * @param userId - User ID to associate with the memory (used as namespace)
@@ -34,15 +54,27 @@ export async function storeMemory(text: string, userId: string, env: Env): Promi
   // Generate embedding
   const values = await generateEmbeddings(text, env);
 
-  // Store in Vectorize
-  await env.VECTORIZE.upsert([
-    {
-      id: memoryId,
-      values,
-      namespace: userId,
-      metadata: { content: text, type: "memory" },
-    },
-  ]);
+  // Store in Vectorize (with local development fallback)
+  if (env.VECTORIZE) {
+    // Truncate content for metadata to avoid size limits
+    const truncatedContent = truncateForMetadata(text);
+
+    await env.VECTORIZE.upsert([
+      {
+        id: memoryId,
+        values,
+        namespace: userId,
+        metadata: {
+          content: truncatedContent,
+          type: "memory",
+          fullContentInD1: true // Flag to indicate full content is in D1
+        },
+      },
+    ]);
+    console.log(`Memory stored in Vectorize with ID: ${memoryId}, content truncated from ${text.length} to ${truncatedContent.length} chars`);
+  } else {
+    console.warn(`Vectorize not available (local development mode). Memory ID: ${memoryId} stored in D1 only.`);
+  }
 
   return memoryId;
 }
@@ -186,11 +218,17 @@ export async function restoreMissingMemoriesToVectorize(userId: string, env: Env
             }
             
             const values = await generateEmbeddings(memory.content, env);
+            const truncatedContent = truncateForMetadata(memory.content);
+
             vectorsToUpsert.push({
               id: memory.id,
               values,
               namespace: userId,
-              metadata: { content: memory.content, type: "memory" },
+              metadata: {
+                content: truncatedContent,
+                type: memory.type || "memory",
+                fullContentInD1: true
+              },
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -247,12 +285,18 @@ export async function updateMemoryVector(
   const newValues = await generateEmbeddings(newContent, env);
 
   // Upsert into Vectorize to update
+  const truncatedContent = truncateForMetadata(newContent);
+
   await env.VECTORIZE.upsert([
     {
       id: memoryId,
       values: newValues,
       namespace: userId,
-      metadata: { content: newContent, type: "memory" }, // Update metadata as well
+      metadata: {
+        content: truncatedContent,
+        type: "memory",
+        fullContentInD1: true
+      },
     },
   ]);
 
