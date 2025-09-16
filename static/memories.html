@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memory Management - MCP Context Library</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body class="bg-white text-gray-800 font-sans leading-relaxed max-w-4xl mx-auto p-6">
+    <header class="flex justify-between items-center mb-8 py-4">
+      <div class="flex items-center space-x-4">
+        <a href="/" class="text-2xl font-bold text-black hover:text-orange-600 transition-colors">MCP Context Library</a>
+        <span class="text-gray-400">|</span>
+        <h1 class="text-xl font-semibold text-gray-700">Memory Management</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a
+          href="/"
+          class="inline-flex items-center space-x-2 px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back to Setup</span>
+        </a>
+        <a
+          href="https://github.com/fikrimastor/context-library"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center space-x-2 px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors duration-200"
+          aria-label="Star context-library on GitHub"
+        >
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            ></path>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="space-y-8">
+      <div
+        class="fixed inset-0 -z-10 h-full w-full bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"
+      ></div>
+
+      <section class="text-center">
+        <h1 class="text-4xl font-bold text-black mb-3">Your Personal Memories</h1>
+        <p class="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
+          View, edit, and manage all your stored memories. These are accessible across all your MCP clients.
+        </p>
+      </section>
+
+      <section>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold leading-7 text-black sm:text-3xl sm:truncate">Memory List</h2>
+          <div class="flex items-center space-x-3">
+            <button
+              id="refresh-button"
+              type="button"
+              class="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+              <span id="refresh-timer" class="text-xs text-gray-500 ml-1"></span>
+            </button>
+            <button
+              id="restore-button"
+              type="button"
+              class="inline-flex items-center rounded border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 shadow-sm hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-white"
+              title="Restore missing memories to Vectorize index"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Restore Index
+            </button>
+          </div>
+        </div>
+        <div class="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
+          <ul role="list" class="divide-y divide-gray-200" id="memories-list">
+            {/* Memories will be loaded here */}
+            <li class="px-4 py-4 sm:px-6">
+              <p class="text-sm font-medium text-gray-500">Loading memories...</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+      Powered by Hono, Cloudflare Workers, Vectorize and D1 database
+    </footer>
+
+    <!-- UUID Generation Script -->
+    <script>
+      // Generate or retrieve UUID for this user
+      let userUuid = localStorage.getItem("mcpUserUuid");
+      if (!userUuid) {
+        if (window.crypto && window.crypto.randomUUID) {
+          userUuid = window.crypto.randomUUID();
+          localStorage.setItem("mcpUserUuid", userUuid);
+          console.log("Generated new UUID:", userUuid);
+        } else {
+          userUuid = "fallback-" + Date.now() + "-" + Math.random().toString(36).substring(2, 15);
+          localStorage.setItem("mcpUserUuid", userUuid);
+          console.warn("crypto.randomUUID not available, used fallback UUID.");
+        }
+      } else {
+        console.log("Using existing UUID:", userUuid);
+      }
+    </script>
+
+    <!-- Memories Management Script -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const memoriesList = document.getElementById("memories-list");
+        const refreshTimerSpan = document.getElementById("refresh-timer");
+        const refreshButton = document.getElementById("refresh-button");
+        const restoreButton = document.getElementById("restore-button");
+        const refreshIntervalSeconds = 30;
+        let countdown = refreshIntervalSeconds;
+        let fetchIntervalId = null;
+        let timerIntervalId = null;
+
+        function updateTimerDisplay() {
+          if (refreshTimerSpan) {
+            refreshTimerSpan.textContent = `(${countdown}s) `;
+          }
+        }
+
+        function fetchAndDisplayMemories() {
+          if (!memoriesList || !userUuid) {
+            console.error("Missing memories list element or user UUID.");
+            if (memoriesList) {
+              memoriesList.innerHTML = "";
+              const li = document.createElement("li");
+              li.className = "px-4 py-4 sm:px-6 text-red-600";
+              li.textContent = "Could not identify user to load memories.";
+              memoriesList.appendChild(li);
+            }
+            if (fetchIntervalId) clearInterval(fetchIntervalId);
+            if (timerIntervalId) clearInterval(timerIntervalId);
+            if (refreshTimerSpan) refreshTimerSpan.textContent = "Error";
+            return;
+          }
+
+          console.log("Fetching memories...");
+          fetch(`/${userUuid}/memories`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              memoriesList.innerHTML = "";
+              let hasMemories = false;
+              if (data.success && data.memories && data.memories.length > 0) {
+                hasMemories = true;
+                data.memories.forEach((memory) => {
+                  const li = document.createElement("li");
+                  li.className =
+                    "memory-item px-4 py-3 sm:px-6 flex justify-between items-center hover:bg-gray-50 transition duration-150 ease-in-out";
+                  li.dataset.memoryId = memory.id;
+
+                  const contentContainer = document.createElement("div");
+                  contentContainer.className = "flex-grow mr-4 overflow-hidden";
+
+                  const contentSpan = document.createElement("span");
+                  contentSpan.className = "memory-content text-sm text-gray-800 block truncate";
+                  contentSpan.textContent = memory.content || "Empty memory";
+                  contentContainer.appendChild(contentSpan);
+
+                  li.appendChild(contentContainer);
+
+                  const buttonContainer = document.createElement("div");
+                  buttonContainer.className = "flex space-x-2 flex-shrink-0";
+
+                  // Edit button
+                  const editButton = document.createElement("button");
+                  editButton.textContent = "Edit";
+                  editButton.className =
+                    "edit-button inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2";
+                  buttonContainer.appendChild(editButton);
+
+                  // Delete button
+                  const deleteButton = document.createElement("button");
+                  deleteButton.textContent = "Delete";
+                  deleteButton.className =
+                    "delete-button inline-flex items-center rounded border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2";
+                  buttonContainer.appendChild(deleteButton);
+
+                  li.appendChild(buttonContainer);
+                  memoriesList.appendChild(li);
+                });
+              } else if (data.success) {
+                // No memories found - Enhanced Empty State
+                const li = document.createElement("li");
+                li.className = "px-6 py-12 sm:px-8 text-center";
+
+                const emptyStateContainer = document.createElement("div");
+                emptyStateContainer.className = "flex flex-col items-center space-y-3";
+
+                // SVG Icon
+                const svgIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgIcon.setAttribute("class", "h-12 w-12 text-gray-400");
+                svgIcon.setAttribute("fill", "none");
+                svgIcon.setAttribute("viewBox", "0 0 24 24");
+                svgIcon.setAttribute("stroke", "currentColor");
+                svgIcon.setAttribute("stroke-width", "1");
+                svgIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />`;
+                emptyStateContainer.appendChild(svgIcon);
+
+                const heading = document.createElement("h3");
+                heading.className = "text-lg font-semibold text-gray-800";
+                heading.textContent = "No Memories Stored Yet";
+                emptyStateContainer.appendChild(heading);
+
+                const paragraph = document.createElement("p");
+                paragraph.className = "text-sm text-gray-500";
+                paragraph.textContent = "Add your first memory through your MCP client (like Cursor, Claude, etc.).";
+                emptyStateContainer.appendChild(paragraph);
+
+                li.appendChild(emptyStateContainer);
+                memoriesList.appendChild(li);
+              } else {
+                throw new Error(data.error || "Failed to fetch memories");
+              }
+            })
+            .catch((error) => {
+              console.error("Error fetching or processing memories:", error);
+              memoriesList.innerHTML = "";
+              const li = document.createElement("li");
+              li.className = "px-4 py-4 sm:px-6 text-red-600";
+              li.textContent = `Failed to load memories: ${error.message}`;
+              memoriesList.appendChild(li);
+            });
+
+          countdown = refreshIntervalSeconds;
+          updateTimerDisplay();
+        }
+
+        // --- Edit Mode Functions ---
+
+        function enterEditMode(listItem) {
+          const contentContainer = listItem.querySelector(".flex-grow");
+          const contentSpan = contentContainer.querySelector(".memory-content");
+          const buttonContainer = listItem.querySelector(".flex.space-x-2");
+          const editButton = buttonContainer.querySelector(".edit-button");
+          const deleteButton = buttonContainer.querySelector(".delete-button");
+
+          const currentContent = contentSpan.textContent;
+          listItem.dataset.originalContent = currentContent;
+
+          // Replace span with input
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = currentContent;
+          input.className =
+            "memory-input block w-full rounded-md border-gray-300 bg-white py-1 px-2 text-gray-900 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-500 focus:ring-opacity-50 sm:text-sm";
+          contentContainer.replaceChild(input, contentSpan);
+          input.focus();
+          input.select();
+
+          // Change buttons to Save/Cancel
+          editButton.textContent = "Save";
+          editButton.classList.remove(
+            "edit-button",
+            "border-gray-300",
+            "bg-white",
+            "text-gray-700",
+            "hover:bg-gray-50"
+          );
+          editButton.classList.add(
+            "save-button",
+            "border-green-500",
+            "bg-green-50",
+            "text-green-700",
+            "hover:bg-green-100",
+            "focus:ring-green-500"
+          );
+
+          deleteButton.textContent = "Cancel";
+          deleteButton.classList.remove(
+            "delete-button",
+            "border-red-300",
+            "bg-red-50",
+            "text-red-700",
+            "hover:bg-red-100",
+            "focus:ring-red-500"
+          );
+          deleteButton.classList.add(
+            "cancel-button",
+            "border-gray-300",
+            "bg-white",
+            "text-gray-700",
+            "hover:bg-gray-50",
+            "focus:ring-orange-500"
+          );
+        }
+
+        function exitEditMode(listItem, newContent) {
+          const contentContainer = listItem.querySelector(".flex-grow");
+          const input = contentContainer.querySelector(".memory-input");
+          const buttonContainer = listItem.querySelector(".flex.space-x-2");
+          const saveButton = buttonContainer.querySelector(".save-button");
+          const cancelButton = buttonContainer.querySelector(".cancel-button");
+
+          // Replace input with span
+          const contentSpan = document.createElement("span");
+          contentSpan.className = "memory-content text-sm text-gray-800 block truncate";
+          contentSpan.textContent = newContent;
+          contentContainer.replaceChild(contentSpan, input);
+          delete listItem.dataset.originalContent;
+
+          // Change buttons back to Edit/Delete
+          saveButton.textContent = "Edit";
+          saveButton.classList.remove(
+            "save-button",
+            "border-green-500",
+            "bg-green-50",
+            "text-green-700",
+            "hover:bg-green-100",
+            "focus:ring-green-500"
+          );
+          saveButton.classList.add(
+            "edit-button",
+            "border-gray-300",
+            "bg-white",
+            "text-gray-700",
+            "hover:bg-gray-50",
+            "focus:ring-orange-500"
+          );
+          saveButton.disabled = false;
+
+          cancelButton.textContent = "Delete";
+          cancelButton.classList.remove(
+            "cancel-button",
+            "border-gray-300",
+            "bg-white",
+            "text-gray-700",
+            "hover:bg-gray-50",
+            "focus:ring-orange-500"
+          );
+          cancelButton.classList.add(
+            "delete-button",
+            "border-red-300",
+            "bg-red-50",
+            "text-red-700",
+            "hover:bg-red-100",
+            "focus:ring-red-500"
+          );
+        }
+
+        function saveChanges(listItem) {
+          const memoryId = listItem.dataset.memoryId;
+          const input = listItem.querySelector(".memory-input");
+          const saveButton = listItem.querySelector(".save-button");
+          const newContent = input.value.trim();
+
+          if (!newContent) {
+            alert("Memory content cannot be empty.");
+            input.focus();
+            return;
+          }
+
+          saveButton.disabled = true;
+          saveButton.textContent = "Saving...";
+
+          fetch(`/${userUuid}/memories/${memoryId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: newContent }),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                return response
+                  .json()
+                  .then((err) => {
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                  })
+                  .catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                  });
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (data.success) {
+                console.log(`Memory ${memoryId} updated successfully.`);
+                exitEditMode(listItem, newContent);
+              } else {
+                throw new Error(data.error || "Update failed on the server.");
+              }
+            })
+            .catch((error) => {
+              console.error("Error updating memory:", error);
+              alert(`Failed to update memory: ${error.message}`);
+              saveButton.disabled = false;
+              saveButton.textContent = "Save";
+            });
+        }
+
+        // Timer countdown logic
+        function startTimer() {
+          if (timerIntervalId) clearInterval(timerIntervalId);
+          timerIntervalId = setInterval(() => {
+            countdown--;
+            if (countdown < 0) {
+              countdown = refreshIntervalSeconds;
+            }
+            updateTimerDisplay();
+          }, 1000);
+        }
+
+        // Function to reset the automatic fetch interval
+        function resetAutoRefresh() {
+          if (fetchIntervalId) clearInterval(fetchIntervalId);
+          fetchIntervalId = setInterval(fetchAndDisplayMemories, refreshIntervalSeconds * 1000);
+          countdown = refreshIntervalSeconds;
+          updateTimerDisplay();
+          startTimer();
+        }
+
+        // Initial setup
+        if (userUuid && memoriesList && refreshTimerSpan && refreshButton) {
+          fetchAndDisplayMemories();
+          resetAutoRefresh();
+
+          refreshButton.addEventListener("click", () => {
+            console.log("Manual refresh triggered.");
+            fetchAndDisplayMemories();
+            resetAutoRefresh();
+          });
+
+          // Restore button functionality
+          if (restoreButton) {
+            restoreButton.addEventListener("click", () => {
+              if (!confirm("This will restore missing memories from the database to the Vectorize index. Continue?")) {
+                return;
+              }
+
+              console.log("Memory restoration triggered.");
+              const originalText = restoreButton.innerHTML;
+              restoreButton.disabled = true;
+              restoreButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Restoring...
+              `;
+
+              fetch(`/${userUuid}/memories/restore`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+              })
+              .then((response) => {
+                if (!response.ok) {
+                  return response.json().then(err => {
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                  }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                  });
+                }
+                return response.json();
+              })
+              .then((data) => {
+                if (data.success) {
+                  console.log("Memory restoration completed:", data);
+
+                  let message = `Restoration completed! Restored ${data.restored} memories to Vectorize index.`;
+                  if (data.errors && data.errors.length > 0) {
+                    message += `\n\nErrors encountered: ${data.errors.length}\n`;
+                    data.errors.forEach(error => {
+                      message += `- Memory ${error.memoryId}: ${error.error}\n`;
+                    });
+                  }
+
+                  alert(message);
+
+                  fetchAndDisplayMemories();
+                  resetAutoRefresh();
+                } else {
+                  throw new Error(data.error || "Restoration failed on the server.");
+                }
+              })
+              .catch((error) => {
+                console.error("Error during memory restoration:", error);
+                alert(`Failed to restore memories: ${error.message}`);
+              })
+              .finally(() => {
+                restoreButton.disabled = false;
+                restoreButton.innerHTML = originalText;
+              });
+            });
+          }
+
+          // Event delegation for memory list actions
+          memoriesList.addEventListener("click", function (event) {
+            const target = event.target;
+            const listItem = target.closest(".memory-item");
+            if (!listItem) return;
+
+            const memoryId = listItem.dataset.memoryId;
+
+            // Edit/Save Click
+            if (target.classList.contains("edit-button")) {
+              enterEditMode(listItem);
+            } else if (target.classList.contains("save-button")) {
+              saveChanges(listItem);
+            }
+            // Delete/Cancel Click
+            else if (target.classList.contains("delete-button")) {
+              if (confirm(`Are you sure you want to delete this memory?`)) {
+                const deleteButton = target;
+                deleteButton.disabled = true;
+                deleteButton.textContent = "Deleting...";
+
+                fetch(`/${userUuid}/memories/${memoryId}`, { method: "DELETE" })
+                  .then((response) => {
+                    if (!response.ok) {
+                      return response
+                        .json()
+                        .then((err) => {
+                          throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                        })
+                        .catch(() => {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                  })
+                  .then((data) => {
+                    if (data.success) {
+                      console.log(`Memory ${memoryId} deleted successfully.`);
+                      listItem.remove();
+                      // Check if list is now empty after deletion
+                      const hasMemories = memoriesList.querySelector(".memory-item") !== null;
+                      if (!hasMemories) {
+                        const li = document.createElement("li");
+                        li.className = "px-6 py-12 sm:px-8 text-center";
+
+                        const emptyStateContainer = document.createElement("div");
+                        emptyStateContainer.className = "flex flex-col items-center space-y-3";
+
+                        // SVG Icon
+                        const svgIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                        svgIcon.setAttribute("class", "h-12 w-12 text-gray-400");
+                        svgIcon.setAttribute("fill", "none");
+                        svgIcon.setAttribute("viewBox", "0 0 24 24");
+                        svgIcon.setAttribute("stroke", "currentColor");
+                        svgIcon.setAttribute("stroke-width", "1");
+                        svgIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />`;
+                        emptyStateContainer.appendChild(svgIcon);
+
+                        const heading = document.createElement("h3");
+                        heading.className = "text-lg font-semibold text-gray-800";
+                        heading.textContent = "No Memories Stored Yet";
+                        emptyStateContainer.appendChild(heading);
+
+                        const paragraph = document.createElement("p");
+                        paragraph.className = "text-sm text-gray-500";
+                        paragraph.textContent =
+                          "Add your first memory through your connected MCP client (like Cursor, Claude, etc.).";
+                        emptyStateContainer.appendChild(paragraph);
+
+                        li.appendChild(emptyStateContainer);
+                        memoriesList.appendChild(li);
+                      }
+                    } else {
+                      throw new Error(data.error || "Deletion failed on the server.");
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Error deleting memory:", error);
+                    alert(`Failed to delete memory: ${error.message}`);
+                    deleteButton.disabled = false;
+                    deleteButton.textContent = "Delete";
+                  });
+              }
+            } else if (target.classList.contains("cancel-button")) {
+              const originalContent = listItem.dataset.originalContent || "";
+              exitEditMode(listItem, originalContent);
+            }
+          });
+
+          // Handle Enter/Escape key press in edit mode input field
+          memoriesList.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && event.target.classList.contains("memory-input")) {
+              event.preventDefault();
+              const listItem = event.target.closest(".memory-item");
+              if (listItem) {
+                saveChanges(listItem);
+              }
+            } else if (event.key === "Escape" && event.target.classList.contains("memory-input")) {
+              event.preventDefault();
+              const listItem = event.target.closest(".memory-item");
+              if (listItem) {
+                const originalContent = listItem.dataset.originalContent || "";
+                exitEditMode(listItem, originalContent);
+              }
+            }
+          });
+        } else {
+          // Handle missing elements or UUID on initial load
+          if (refreshTimerSpan) refreshTimerSpan.textContent = "Setup Error";
+          if (memoriesList && !userUuid) {
+            memoriesList.innerHTML = "";
+            const li = document.createElement("li");
+            li.className = "px-4 py-4 sm:px-6 text-red-600";
+            li.textContent = "Could not identify user to load memories.";
+            memoriesList.appendChild(li);
+          }
+          console.error("Initial setup failed: Missing critical elements or UUID.");
+        }
+      });
+    </script>
+  </body>
+</html>
