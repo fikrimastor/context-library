@@ -28,7 +28,7 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
       3. Technical details, examples, or emotional responses emerge that would be valuable in future interactions
       4. User explicitly asks to remember events, journal, documents, or project details
       5. You generate significant documentation that would be valuable in future interactions
-      6. Product Requirements Documents, Technical Specs, Best Practise documentation are created
+      6. Product Requirements Documents, Technical Specs, Best Practise documentation are created, IMPORTANT: remember the full content of these documents, don't just store a summary
 
       Consider using this tool after each user message to build comprehensive context over time. The stored information
       will be available in future sessions to provide personalized responses. THIS TOOL MUST BE INVOKED THROUGH
