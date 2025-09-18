@@ -51,6 +51,8 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
                 return 'technical_spec';
               } else if (lower.includes('feature request') || lower.includes('user story')) {
                 return 'feature_request';
+              } else if (lower.includes('Documentation') || lower.includes('best practices') || lower.includes('how to')) {
+                return 'documentation';
               } else if (lower.includes('journal')) {
                 return 'journal';
               }
