@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export async function initializeDatabase(env: Env): Promise<void> {
     try {
-        await env.DB.exec("CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, userId TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+        await env.DB.exec("CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, userId TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, type TEXT DEFAULT 'memory', metadata TEXT)");
         console.log("Checked/Created memories table in D1.");
     } catch (e) {
         console.error("Failed to create memories table in D1:", e);
@@ -17,14 +17,19 @@ export async function initializeDatabase(env: Env): Promise<void> {
  * Stores a memory in D1 database
  * @param content Memory content to store
  * @param userId User ID to associate with memory
+ * @param env
  * @param memoryId Optional ID, will generate UUID if not provided
+ * @param type
+ * @param metadata
  * @returns Memory ID
  */
 export async function storeMemoryInD1(
     content: string,
     userId: string,
     env: Env,
-    memoryId: string = uuidv4()
+    memoryId: string = uuidv4(),
+    type: string | null = 'memory',
+    metadata: string | null = null
 ): Promise<string> {
     try {
         const stmt = env.DB.prepare(
@@ -46,15 +51,39 @@ export async function storeMemoryInD1(
  * @param userId User ID to retrieve memories for
  * @returns Array of memory objects
  */
-export async function getAllMemoriesFromD1(userId: string, env: Env): Promise<Array<{id: string, content: string}>> {
+export async function getAllMemoriesFromD1(userId: string, env: Env): Promise<Array<{id: string, content: string, type: string}>> {
     try {
         const result = await env.DB.prepare(
             "SELECT id, content FROM memories WHERE userId = ? ORDER BY created_at DESC"
         ).bind(userId).all();
 
-        return result.results as Array<{id: string, content: string}>;
+        return result.results as Array<{id: string, content: string, type: string}>;
     } catch (error) {
         console.error("Error retrieving memories from D1:", error);
+        throw error;
+    }
+}
+
+/**
+ * Retrieves specific memories by their IDs from D1
+ * @param memoryIds Array of memory IDs to retrieve
+ * @param env Environment object containing the DB binding
+ * @returns Array of memory objects
+ */
+export async function getMemoriesByIds(memoryIds: string[], env: Env): Promise<Array<{id: string, content: string}>> {
+    if (memoryIds.length === 0) {
+        return [];
+    }
+
+    try {
+        const placeholders = memoryIds.map(() => '?').join(',');
+        const result = await env.DB.prepare(
+            `SELECT id, content FROM memories WHERE id IN (${placeholders})`
+        ).bind(...memoryIds).all();
+
+        return result.results as Array<{id: string, content: string}>;
+    } catch (error) {
+        console.error("Error retrieving memories by IDs from D1:", error);
         throw error;
     }
 }

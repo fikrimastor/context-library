@@ -19,6 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+IMPORTANT: **MUST** use subagent_type="javascript-pro" to execute task.
+
 ```bash
 # Development server with Vectorize binding
 npm run dev
