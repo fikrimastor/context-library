@@ -27,6 +27,8 @@ When retrieving memories:
 
 ## Development Environment
 
+IMPORTANT: **MUST** use subagent_type="javascript-pro" to execute task.
+
 ### Prerequisites
 - Node.js (version specified in package.json)
 - npm or yarn

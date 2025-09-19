@@ -134,5 +134,7 @@ export class MyMCP extends McpAgent<Env, {}, MyMCPProps> {
           }
         }
     );
+
+    // prompt
   }
 }
